@@ -1,0 +1,585 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hearts of Love - I Love You</title>
+    <!-- Tailwind CSS for clean layout and responsiveness -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Playfair+Display:wght@700;800&display=swap');
+
+        :root {
+            --heart-red: #dc2626;
+            --heart-bright: #ef4444;
+            --pink-biu: #f472b6;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #fdf2f8 0%, #fce7f3 45%, #fbcfe8 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fredoka', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Main White Rounded Card matching the video */
+        .love-card {
+            background-color: #ffffff;
+            border-radius: 36px;
+            box-shadow: 
+                0 25px 50px -12px rgba(225, 29, 72, 0.14),
+                0 8px 24px -6px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        /* SVG Stroke Drawing Animation Classes */
+        .draw-path {
+            fill: none;
+            stroke: #18181b;
+            stroke-width: 4.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .draw-fill-white {
+            fill: #ffffff;
+            stroke: #18181b;
+            stroke-width: 4.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .face-feature {
+            opacity: 0;
+            transform-origin: center;
+            transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .face-feature.visible {
+            opacity: 1;
+        }
+
+        /* Cute "biu" & mini shooting hearts at fingertip */
+        .biu-group {
+            opacity: 0;
+            transform: scale(0.6) translate(-6px, 6px);
+            transform-origin: left bottom;
+            transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .biu-group.active {
+            opacity: 1;
+            transform: scale(1) translate(0, 0);
+        }
+
+        .biu-text {
+            font-family: 'Fredoka', cursive, sans-serif;
+            font-weight: 600;
+            fill: #18181b;
+            font-size: 19px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Subtle pulse on the fingertip mini-hearts while shooting */
+        @keyframes biuPulse {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.18) translateY(-3px); }
+        }
+
+        .biu-shooting .mini-pink-heart {
+            animation: biuPulse 0.36s ease-in-out infinite;
+        }
+
+        /* Flying red hearts & grid slots */
+        .grid-heart-slot {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flying-heart {
+            position: absolute;
+            pointer-events: none;
+            z-index: 20;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 2px 4px rgba(220, 38, 38, 0.22));
+        }
+
+        /* Gentle heartbeat once complete */
+        @keyframes heartBeatComplete {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.045); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.03); }
+            70% { transform: scale(1); }
+        }
+
+        .heart-grid-complete {
+            animation: heartBeatComplete 2.2s ease-in-out infinite;
+        }
+
+        /* "I Love You" Classic Bold Red Serif Text */
+        .love-text {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-weight: 800;
+            color: #dc2626;
+            letter-spacing: 0.02em;
+            opacity: 0;
+            transform: translateY(14px) scale(0.92);
+            transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-shadow: 0 2px 10px rgba(220, 38, 38, 0.12);
+        }
+
+        .love-text.revealed {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Subtle ambient floating hearts in outer background */
+        @keyframes floatUpSlow {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(0.8);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.35;
+            }
+            85% {
+                opacity: 0.35;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(25deg) scale(1.1);
+                opacity: 0;
+            }
+        }
+
+        .ambient-heart {
+            position: fixed;
+            bottom: -40px;
+            pointer-events: none;
+            z-index: 0;
+            animation: floatUpSlow linear infinite;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+
+    <!-- Subtle ambient floating hearts in the background -->
+    <div id="ambient-bg" aria-hidden="true"></div>
+
+    <!-- Main White Rounded Card (matching the video's clean white rounded stage) -->
+    <main id="stage-card" 
+          class="love-card relative z-10 w-full max-w-[680px] aspect-[16/10] sm:aspect-[16/9.5] min-h-[310px] sm:min-h-[380px] px-4 py-6 sm:px-10 sm:py-8 flex flex-col justify-center cursor-pointer"
+          title="Click anywhere to replay">
+
+        <!-- Inner Stage Container -->
+        <div id="animation-stage" class="relative w-full h-full flex items-center justify-between gap-2 sm:gap-4">
+
+            <!-- LEFT SIDE: Cute Minimalist Line-Art Doodle Character -->
+            <div class="relative w-[38%] sm:w-[36%] h-full flex items-end justify-center pb-2 sm:pb-4">
+                <svg id="doodle-svg" viewBox="0 0 220 230" class="w-full max-w-[205px] h-auto overflow-visible">
+                    <!-- Body & Head continuous cute doodle outline -->
+                    <path id="char-body" class="draw-fill-white" 
+                          d="M 52 215 
+                             C 50 185, 53 158, 63 142
+                             C 41 131, 30 107, 36 81
+                             C 42 54, 68 38, 97 41
+                             C 125 44, 145 67, 143 95
+                             C 141 117, 127 134, 108 142
+                             C 113 149, 117 157, 119 166" />
+
+                    <!-- Lower right torso / hip line -->
+                    <path id="char-torso-right" class="draw-path"
+                          d="M 116 177 C 118 190, 119 203, 119 215" />
+
+                    <!-- Left arm tucked neatly -->
+                    <path id="char-left-arm" class="draw-path"
+                          d="M 65 154 C 55 168, 56 186, 67 195 C 74 200, 81 195, 81 187 C 81 178, 76 168, 74 162" />
+
+                    <!-- Right arm raised & pointing finger gun / shooting gesture -->
+                    <path id="char-right-arm" class="draw-path"
+                          d="M 106 154 
+                             L 145 143 
+                             C 147 138, 152 135, 156 137
+                             C 159 139, 158 143, 155 145
+                             L 175 139
+                             C 180 137, 183 142, 178 145
+                             L 161 151
+                             C 165 152, 165 157, 160 158
+                             C 163 160, 162 164, 157 165
+                             C 159 167, 157 171, 152 170
+                             L 114 176" />
+
+                    <!-- Cute Face Features (Eyes, Blush, Smile) -->
+                    <g id="char-face" class="face-feature">
+                        <!-- Left Eye -->
+                        <ellipse cx="96" cy="92" rx="4.2" ry="5.2" fill="#18181b" />
+                        <circle cx="94.6" cy="90.2" r="1.4" fill="#ffffff" />
+                        <!-- Right Eye -->
+                        <ellipse cx="123" cy="90" rx="4.2" ry="5.2" fill="#18181b" />
+                        <circle cx="121.6" cy="88.2" r="1.4" fill="#ffffff" />
+                        <!-- Rosy Cheeks -->
+                        <ellipse cx="86" cy="102" rx="6" ry="3.5" fill="#fbcfe8" opacity="0.85" />
+                        <ellipse cx="131" cy="100" rx="6" ry="3.5" fill="#fbcfe8" opacity="0.85" />
+                        <!-- Cute Happy Smile -->
+                        <path d="M 105 101 Q 111 108 117 100" fill="none" stroke="#18181b" stroke-width="3.5" stroke-linecap="round" />
+                    </g>
+
+                    <!-- Fingertip Origin Marker (invisible anchor for flying hearts) -->
+                    <circle id="finger-origin" cx="183" cy="138" r="2" fill="transparent" />
+
+                    <!-- Cute "biu" & pink hearts effect right next to the shooting finger -->
+                    <g id="biu-effect" class="biu-group">
+                        <!-- Mini pink heart 1 -->
+                        <path class="mini-pink-heart" style="transform-origin: 185px 116px;"
+                              d="M 185 123 C 185 123, 176 116, 176 111 C 176 108, 179 106, 182 106 C 183.8 106, 185 107.5, 185 108.8 C 185 107.5, 186.2 106, 188 106 C 191 106, 194 108, 194 111 C 194 116, 185 123, 185 123 Z" 
+                              fill="#f472b6" />
+                        <!-- Mini pink heart 2 -->
+                        <path class="mini-pink-heart" style="transform-origin: 201px 124px; animation-delay: 0.14s;"
+                              d="M 201 129 C 201 129, 195 124, 195 120.5 C 195 118.2, 197 116.8, 199 116.8 C 200.2 116.8, 201 117.8, 201 118.8 C 201 117.8, 201.8 116.8, 203 116.8 C 205 116.8, 207 118.2, 207 120.5 C 207 124, 201 129, 201 129 Z" 
+                              fill="#fb7185" />
+                        <!-- Cute "biu" text -->
+                        <text x="190" y="148" class="biu-text" transform="rotate(-10 190 148)">biu</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- RIGHT SIDE: Assembling Grid of Red Hearts + "I Love You" -->
+            <div class="relative w-[60%] sm:w-[62%] h-full flex flex-col items-center justify-center pr-1 sm:pr-3">
+                <!-- 9 rows x 11 columns Heart Grid -->
+                <div id="heart-grid" 
+                     class="grid grid-cols-11 gap-[2px] sm:gap-[4px] w-full max-w-[310px] aspect-[11/9] transition-transform duration-500">
+                    <!-- Grid cells populated dynamically by JS -->
+                </div>
+
+                <!-- Classic Bold Red Serif Text beneath the large heart -->
+                <div id="love-caption" class="love-text mt-3 sm:mt-5 text-2xl sm:text-4xl tracking-wide text-center">
+                    I Love You
+                </div>
+            </div>
+
+            <!-- Layer for flying hearts animating from finger to grid slots -->
+            <div id="flying-layer" class="absolute inset-0 pointer-events-none overflow-visible"></div>
+        </div>
+    </main>
+
+    <!-- Subtle Bottom Controls (Replay Button & Hint) -->
+    <div class="relative z-10 mt-5 flex items-center gap-3">
+        <button id="replay-btn"
+                type="button"
+                class="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 hover:bg-white text-rose-600 font-medium text-sm shadow-md hover:shadow-lg border border-rose-100 transition-all duration-200 active:scale-95 cursor-pointer">
+            <svg class="w-4 h-4 transition-transform duration-500 group-hover:-rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+            </svg>
+            <span>Replay Animation</span>
+        </button>
+    </div>
+
+    <script>
+        /**
+         * Hearts of Love - I Love You Animation Controller
+         * Replicates the exact sequence:
+         * 1. Doodle character draws itself in via SVG stroke-dashoffset animations.
+         * 2. Character's cute face and "biu" pink hearts appear at the pointing fingertip.
+         * 3. Tiny red hearts fly rapidly from the fingertip to assemble the 9x11 heart grid
+         *    (sweeping right-to-left / top-to-bottom just like the video).
+         * 4. Once complete, "I Love You" fades/pops in underneath and the heart gently beats.
+         */
+
+        // Classic 9-row by 11-column Heart Matrix (1 = red heart, 0 = empty space)
+        const HEART_MATRIX = [
+            [0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0], // Row 0 (1)
+            [0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0], // Row 1 (2)
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Row 2 (3)
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Row 3 (4)
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], // Row 4 (5)
+            [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], // Row 5 (6)
+            [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0], // Row 6 (7)
+            [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0], // Row 7 (8)
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]  // Row 8 (9)
+        ];
+
+        const heartGridEl = document.getElementById('heart-grid');
+        const flyingLayerEl = document.getElementById('flying-layer');
+        const animationStageEl = document.getElementById('animation-stage');
+        const loveCaptionEl = document.getElementById('love-caption');
+        const biuEffectEl = document.getElementById('biu-effect');
+        const charFaceEl = document.getElementById('char-face');
+        const fingerOriginEl = document.getElementById('finger-origin');
+        const replayBtn = document.getElementById('replay-btn');
+        const stageCard = document.getElementById('stage-card');
+
+        let activeTimeouts = [];
+        let activeAnimations = [];
+        let gridSlots = []; // Stores { row, col, el }
+
+        // Inline SVG template for a crisp, vibrant red heart
+        function createHeartSVG(color = '#dc2626') {
+            return `
+                <svg viewBox="0 0 24 24" class="w-full h-full block" fill="${color}">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+                             2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+                             C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5
+                             c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            `;
+        }
+
+        // Build the 9x11 DOM grid once
+        function buildGrid() {
+            heartGridEl.innerHTML = '';
+            gridSlots = [];
+
+            for (let r = 0; r < HEART_MATRIX.length; r++) {
+                for (let c = 0; c < HEART_MATRIX[r].length; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-heart-slot';
+                    heartGridEl.appendChild(cell);
+
+                    if (HEART_MATRIX[r][c] === 1) {
+                        gridSlots.push({ row: r, col: c, el: cell });
+                    }
+                }
+            }
+        }
+
+        // Sort order matching the video: right-to-left columns, top-to-bottom rows
+        function getAssemblyOrder() {
+            return [...gridSlots].sort((a, b) => {
+                // Primary sweep from right side to left side, with slight diagonal cascade
+                const scoreA = (10 - a.col) * 1.35 + a.row * 0.85;
+                const scoreB = (10 - b.col) * 1.35 + b.row * 0.85;
+                return scoreA - scoreB;
+            });
+        }
+
+        // Helper to schedule timeouts cleanly so replay cancels previous runs
+        function schedule(fn, delay) {
+            const id = setTimeout(fn, delay);
+            activeTimeouts.push(id);
+            return id;
+        }
+
+        // Animate an SVG stroke path drawing itself
+        function animateStrokePath(pathId, duration, delay) {
+            const path = document.getElementById(pathId);
+            if (!path) return;
+            const length = path.getTotalLength();
+
+            path.style.transition = 'none';
+            path.style.strokeDasharray = `${length}`;
+            path.style.strokeDashoffset = `${length}`;
+            // Force reflow
+            path.getBoundingClientRect();
+
+            schedule(() => {
+                path.style.transition = `stroke-dashoffset ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+                path.style.strokeDashoffset = '0';
+            }, delay);
+        }
+
+        // Reset all visual elements before starting/replaying
+        function resetAnimation() {
+            activeTimeouts.forEach(clearTimeout);
+            activeTimeouts = [];
+
+            activeAnimations.forEach(anim => {
+                try { anim.cancel(); } catch (e) {}
+            });
+            activeAnimations = [];
+
+            // Clear flying layer and placed hearts
+            flyingLayerEl.innerHTML = '';
+            gridSlots.forEach(slot => {
+                slot.el.innerHTML = '';
+            });
+
+            // Reset classes
+            heartGridEl.classList.remove('heart-grid-complete');
+            loveCaptionEl.classList.remove('revealed');
+            charFaceEl.classList.remove('visible');
+            biuEffectEl.classList.remove('active', 'biu-shooting');
+
+            // Reset stroke paths immediately
+            ['char-body', 'char-torso-right', 'char-left-arm', 'char-right-arm'].forEach(id => {
+                const p = document.getElementById(id);
+                if (p) {
+                    const len = p.getTotalLength();
+                    p.style.transition = 'none';
+                    p.style.strokeDasharray = `${len}`;
+                    p.style.strokeDashoffset = `${len}`;
+                }
+            });
+        }
+
+        // Launch a single tiny red heart from the character's finger to a target grid slot
+        function shootHeartToSlot(slot, onLanded) {
+            const stageRect = animationStageEl.getBoundingClientRect();
+            const fingerRect = fingerOriginEl.getBoundingClientRect();
+            const targetRect = slot.el.getBoundingClientRect();
+
+            // Calculate positions relative to #animation-stage
+            const startX = (fingerRect.left - stageRect.left) + fingerRect.width / 2;
+            const startY = (fingerRect.top - stageRect.top) + fingerRect.height / 2;
+
+            const endX = (targetRect.left - stageRect.left) + targetRect.width / 2;
+            const endY = (targetRect.top - stageRect.top) + targetRect.height / 2;
+
+            const heartSize = Math.max(12, targetRect.width);
+
+            // Create flying heart element
+            const flyer = document.createElement('div');
+            flyer.className = 'flying-heart';
+            flyer.style.width = `${heartSize}px`;
+            flyer.style.height = `${heartSize}px`;
+            flyer.style.left = `${startX - heartSize / 2}px`;
+            flyer.style.top = `${startY - heartSize / 2}px`;
+            flyer.innerHTML = createHeartSVG('#ef4444');
+            flyingLayerEl.appendChild(flyer);
+
+            const dx = endX - startX;
+            const dy = endY - startY;
+
+            // Gentle upward arc control point
+            const midX = dx * 0.48;
+            const midY = dy * 0.48 - (28 + Math.random() * 22);
+
+            const flightDuration = 460;
+
+            const anim = flyer.animate([
+                {
+                    transform: 'translate(0px, 0px) scale(0.45) rotate(-15deg)',
+                    opacity: 0.85
+                },
+                {
+                    transform: `translate(${midX}px, ${midY}px) scale(1.18) rotate(8deg)`,
+                    opacity: 1,
+                    offset: 0.55
+                },
+                {
+                    transform: `translate(${dx}px, ${dy}px) scale(1) rotate(0deg)`,
+                    opacity: 1
+                }
+            ], {
+                duration: flightDuration,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'forwards'
+            });
+
+            activeAnimations.push(anim);
+
+            anim.onfinish = () => {
+                // Remove temporary flyer and lock permanent heart into the grid slot
+                flyer.remove();
+                slot.el.innerHTML = createHeartSVG('#dc2626');
+                
+                // Subtle pop on landing
+                const landedSvg = slot.el.firstElementChild;
+                if (landedSvg) {
+                    landedSvg.animate([
+                        { transform: 'scale(1.28)' },
+                        { transform: 'scale(1)' }
+                    ], {
+                        duration: 180,
+                        easing: 'ease-out'
+                    });
+                }
+
+                if (onLanded) onLanded();
+            };
+        }
+
+        // Main Master Timeline
+        function playSequence() {
+            resetAnimation();
+
+            // Step 1: Draw the cute minimalist doodle character (0ms -> 1350ms)
+            animateStrokePath('char-body', 850, 80);
+            animateStrokePath('char-torso-right', 260, 820);
+            animateStrokePath('char-left-arm', 340, 880);
+            animateStrokePath('char-right-arm', 550, 960);
+
+            // Reveal cute face once head is drawn
+            schedule(() => {
+                charFaceEl.classList.add('visible');
+            }, 950);
+
+            // Step 2: Activate "biu" & mini pink hearts at pointing finger (1480ms)
+            schedule(() => {
+                biuEffectEl.classList.add('active', 'biu-shooting');
+            }, 1480);
+
+            // Step 3: Shoot hearts rapidly to build the 9x11 red heart grid (starts at 1620ms)
+            const orderedSlots = getAssemblyOrder();
+            const intervalPerHeart = 36; // Fast, rhythmic stream matching the video
+            let landedCount = 0;
+
+            orderedSlots.forEach((slot, index) => {
+                schedule(() => {
+                    shootHeartToSlot(slot, () => {
+                        landedCount++;
+                        // Step 4: Once the very last heart lands, reveal "I Love You" & pulse!
+                        if (landedCount === orderedSlots.length) {
+                            biuEffectEl.classList.remove('biu-shooting');
+                            heartGridEl.classList.add('heart-grid-complete');
+                            loveCaptionEl.classList.add('revealed');
+                        }
+                    });
+                }, 1620 + index * intervalPerHeart);
+            });
+        }
+
+        // Create soft ambient floating hearts in the background
+        function initAmbientHearts() {
+            const container = document.getElementById('ambient-bg');
+            const colors = ['#f43f5e', '#fb7185', '#f472b6', '#fda4af'];
+            for (let i = 0; i < 14; i++) {
+                const el = document.createElement('div');
+                el.className = 'ambient-heart';
+                const size = 12 + Math.random() * 16;
+                el.style.width = `${size}px`;
+                el.style.height = `${size}px`;
+                el.style.left = `${Math.random() * 100}vw`;
+                el.style.animationDuration = `${9 + Math.random() * 10}s`;
+                el.style.animationDelay = `${-Math.random() * 12}s`;
+                el.innerHTML = createHeartSVG(colors[i % colors.length]);
+                container.appendChild(el);
+            }
+        }
+
+        // Event Listeners
+        replayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playSequence();
+        });
+
+        stageCard.addEventListener('click', () => {
+            playSequence();
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initAmbientHearts();
+            buildGrid();
+            // Slight initial pause so layout settles cleanly before drawing
+            schedule(playSequence, 180);
+        });
+    </script>
+</body>
+</html>
+```
